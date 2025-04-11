@@ -5,9 +5,11 @@ from smtp_client import *
 from waitress import serve
 from flask import Flask, request, jsonify
 from typing import Dict, Tuple
+from pathlib import Path
 
 import subprocess
 import sys
+import platform
 import signal
 
 FRONTEND_PORT = 3000
@@ -34,8 +36,7 @@ class ServiceManager:
         self.should_exit = threading.Event()
         self.processes = []
         self.threads = []
-        
-        # Configuration
+
         self.SERVER_IP = self._get_server_ip()
         self.PORTS = {
             'frontend': 3000,
@@ -44,6 +45,51 @@ class ServiceManager:
             'smtp': 2525,
             'p2p': 5555
         }
+
+        self.os_type = platform.system().lower()
+        self.project_root = Path(__file__).parent.resolve()
+        self.install_dependencies()
+        
+    def install_dependencies(self):
+        """Run the appropriate dependency installer for the OS"""
+        try:
+            if self.os_type == 'windows':
+                self._run_windows_installer()
+            else:
+                self._run_unix_installer()
+            
+            print("\n✓ All dependencies installed successfully")
+            return True
+        except Exception as e:
+            print(f"\n✗ Dependency installation failed: {str(e)}")
+            return False
+
+    def _run_windows_installer(self):
+        """Execute the Windows batch installer"""
+        bat_path = self.project_root / 'dependencies.bat'
+        subprocess.run(
+            [str(bat_path)],
+            cwd=self.project_root,
+            shell=True,
+            check=True,
+            stdout=sys.stdout,
+            stderr=sys.stderr
+        )
+
+    def _run_unix_installer(self):
+        """Execute the Unix shell script installer"""
+        sh_path = self.project_root / 'dependencies.sh'
+        
+        if not os.access(sh_path, os.X_OK):
+            os.chmod(sh_path, 0o755)
+            
+        subprocess.run(
+            [str(sh_path)],
+            cwd=self.project_root,
+            check=True,
+            stdout=sys.stdout,
+            stderr=sys.stderr
+        )
 
     def _get_server_ip(self):
         """Wait until P2P network provides our IP"""
@@ -104,11 +150,13 @@ class ServiceManager:
 
             try:
                 response = send_email(data)
+                print(response)
                 return jsonify({
                     "message": "Email sent successfully",
                     "response": response.decode()
                 }), 200
             except Exception as e:
+                print(e)
                 return jsonify({"error": str(e)}), 500
 
         @app.route("/peers", methods=["GET"])
@@ -134,18 +182,14 @@ class ServiceManager:
 
     def run(self):
         # Start services
-        print("hi")
         self.start_frontend()
-        print("hi")
         self.start_backend()
         self.start_flask()
         smtp_server.start()
         
-        # Handle shutdown
         signal.signal(signal.SIGINT, self.shutdown)
         signal.signal(signal.SIGTERM, self.shutdown)
         
-        # Keep alive
         while not self.should_exit.is_set():
             time.sleep(1)
 
@@ -153,10 +197,8 @@ class ServiceManager:
         print("\nInitiating shutdown...")
         self.should_exit.set()
         
-        # Stop SMTP server
         smtp_server.shutdown()
         
-        # Terminate subprocesses
         for proc in self.processes:
             proc.terminate()
             try:
@@ -164,10 +206,8 @@ class ServiceManager:
             except subprocess.TimeoutExpired:
                 proc.kill()
         
-        # Exit forcefully if needed
         os._exit(0)
 
 if __name__ == '__main__':
-    print("hi")
     manager = ServiceManager()
     manager.run()

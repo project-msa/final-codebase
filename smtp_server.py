@@ -69,8 +69,7 @@ class SMTPServer:
                     "client_domain": ""
                 }
 
-            # Send SMTP greeting
-            client_socket.send(b"220 SMTP kh4rg0sh 1.0\n")
+            client_socket.send(f"220 SMTP {HOSTNAME} 1.0\n".encode())
 
             while True:
                 message = client_socket.recv(1024).strip().decode().split()
@@ -82,7 +81,6 @@ class SMTPServer:
 
                 # HELO Command
                 if command == "HELO":
-                    print("test HELO")  ###
 
                     if len(message) != 2:
                         client_socket.send(b"501 Syntax: HELO hostname \n")
@@ -96,7 +94,6 @@ class SMTPServer:
 
                 # MAIL FROM Command
                 elif command == "MAIL" and len(message) > 1 and message[1].startswith("FROM:<"):
-                    print("test MAIL FROM")  ###
 
                     if not state["HELO"]:
                         client_socket.send(b"503 5.5.1 Error: send HELO first \n")
@@ -116,7 +113,6 @@ class SMTPServer:
 
                 # RCPT TO Command
                 elif command == "RCPT" and len(message) > 1 and message[1].startswith("TO:<"):
-                    print("test RCPT TO")  ###
 
                     if not state["MAIL"]:
                         client_socket.send(b"503 5.1.1 Bad sequence of commands \n")
@@ -138,7 +134,6 @@ class SMTPServer:
 
                 # DATA Command
                 elif command == "DATA":
-                    print("test DATA")  ###
 
                     if not (state["HELO"] and state["MAIL"] and state["RCPT"]):
                         print("handle errors for data")
@@ -146,23 +141,17 @@ class SMTPServer:
 
                     client_socket.send(b"354 End data with <CR><LF>.<CR><LF> \n")
                     
-                    print(MAILDIR)  ###
                     if not os.path.isdir(MAILDIR):
-                        print("create maildir")  ###
                         os.makedirs(MAILDIR)
 
                     mail_dir = os.path.expanduser(f"{MAILDIR}/{recipient_domain}")
-                    print(mail_dir)  ###
                     
                     if not os.path.isdir(mail_dir):
-                        print("created mail_dir")  ###
                         os.makedirs(mail_dir)
                     
                     mail_sender = f"{mail_dir}/{state['client_hostname']}"
-                    print(mail_sender)  ###
 
                     if not os.path.isdir(mail_sender):
-                        print("created mail_sender")  ###
                         os.makedirs(mail_sender)
 
                     counter = 1
@@ -172,7 +161,6 @@ class SMTPServer:
                     eml = ""
                     
                     with open(f"{mail_sender}/{counter}.txt", "w") as open_file:
-                        print(f"{mail_sender}/{counter}.txt")  ###
 
                         while True:
                             data_message = client_socket.recv(1024).strip().decode()
