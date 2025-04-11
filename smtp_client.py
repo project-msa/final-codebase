@@ -12,8 +12,6 @@ Key Specifications:
 - Required headers per section 3.6
 """
 
-import socket
-from typing import Dict
 from utils import *
 from p2p import *
 
@@ -37,7 +35,7 @@ def send_email(data: Dict[str, str]) -> bytes:
 
     recipient_ip = peer.get_ip(recipient_hostname)
 
-    if recipient_ip is None:
+    if ip_address(recipient_ip) is None:
         raise Exception(f"Hostname {recipient_hostname} not found")
     
     email_message = create_eml(

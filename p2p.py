@@ -1,9 +1,11 @@
 from dataclasses import dataclass
-from typing import Dict, List
+from ipaddress import ip_address
+from typing import Dict, List, Tuple
 
 import threading
 import socket
 import time 
+import sys
 import os
 
 @dataclass
@@ -14,17 +16,22 @@ class Peer():
     timestamp: int
 
 class P2PNode:
-    def __init__(self, port=5555):
+    def __init__(self, broadcast_ip, port=5555):
         if port < 1024 and not os.geteuid() == 0:
             raise PermissionError("Ports below 1024 require root privileges")
         
         self.id = socket.gethostname()
+        self.broadcast_ip = broadcast_ip
         self.port = port
         self.peers: Dict[str, Peer] = {}
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.bind(('0.0.0.0', port))
+
+        self.discovery_lapse = 10
+        self.inactivity_lapse = 10
+        self.inactivity_threshold = 30
 
         """
         once the peer is initialised:
@@ -42,16 +49,16 @@ class P2PNode:
         """
         if you received:
             1. JOIN: -> somebody wants to join you
-            format: JOIN|<my_port>|<my_id>
+            format: JOIN|(my_port)|(my_id)
 
             2. PING: -> somebody is asking if you are alive reply to them with a PONG
-            format: PING|<my_port>|<my_id>
+            format: PING|(my_port)|(my_id)
             
             3. PONG: -> somebody has replied to your ping, so update their timestamp
-            format: PONG|<my_port>|<my_id>
+            format: PONG|(my_port)|(my_id)
             
             4. PEER_LIST -> you have received someone's peer list, merge theirs with yours
-            format: PEER_LIST|<peer_list: <peer_id, peer_ip, peer_port>>
+            format: PEER_LIST|(peer_list: (peer_id, peer_ip, peer_port))
         """
         while True:
             data, addr = self.socket.recvfrom(1024)
@@ -77,8 +84,8 @@ class P2PNode:
     def discover_peers(self):
         """Periodic peer discovery"""
         while True:
-            self.socket.sendto(f"JOIN|{self.port}|{self.id}".encode(), ('10.81.15.255', self.port))
-            time.sleep(10)
+            self.socket.sendto(f"JOIN|{self.port}|{self.id}".encode(), (self.broadcast_ip, self.port))
+            time.sleep(self.discovery_lapse)
 
     def handle_join(self, ip: str, port: int, peer_id: str):
         """Process new peer"""
@@ -112,7 +119,7 @@ class P2PNode:
         while True:
             dead_peers = set()
             for peer_id, peer in list(self.peers.items()):
-                if int(time.time()) - peer.timestamp > 30:
+                if int(time.time()) - peer.timestamp > self.inactivity_threshold:
                     dead_peers.add(peer_id)
                 else:
                     self.ping_peer(peer.ip, peer.port)
@@ -121,7 +128,7 @@ class P2PNode:
                 self.peers.pop(peer_id, None)
                 print(f"Removed dead peer {peer_id}")
             
-            time.sleep(10)
+            time.sleep(self.inactivity_lapse)
 
     def ping_peer(self, ip: str, port: int):
         """Ping the peer"""
@@ -156,4 +163,5 @@ class P2PNode:
             print(f"{peer.id} {peer.ip} {peer.port} {peer.timestamp}")
         print()
 
-peer = P2PNode()
+ip_address(sys.argv[1])
+peer = P2PNode(sys.argv[1])

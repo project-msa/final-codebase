@@ -1,14 +1,8 @@
 from utils import *
-from smtp_server import *
 from smtp_client import *
-
-from waitress import serve
-from flask import Flask, request, jsonify
-from typing import Dict, Tuple
 from pathlib import Path
 
 import subprocess
-import sys
 import platform
 import signal
 
@@ -28,16 +22,16 @@ RESPONSE_SUCCESS_CODES = {
 HOSTNAME = socket.gethostname()
 SERVER_IP = peer.get_ip(HOSTNAME)
 
-while SERVER_IP is None:
-    SERVER_IP = peer.get_ip(HOSTNAME)
+if SERVER_IP is None:
+    raise Exception("Unable to initiate a network connection")
 
 class ServiceManager:
-    def __init__(self):
+    def __init__(self, SERVER_IP):
         self.should_exit = threading.Event()
         self.processes = []
         self.threads = []
 
-        self.SERVER_IP = self._get_server_ip()
+        self.SERVER_IP = SERVER_IP
         self.PORTS = {
             'frontend': 3000,
             'express': 3001,
@@ -91,12 +85,6 @@ class ServiceManager:
             stderr=sys.stderr
         )
 
-    def _get_server_ip(self):
-        """Wait until P2P network provides our IP"""
-        while not peer.peers.get(socket.gethostname()):
-            time.sleep(1)
-        return peer.get_ip(socket.gethostname())
-
     def start_frontend(self):
         env = {
             **os.environ,
@@ -133,6 +121,9 @@ class ServiceManager:
         self.processes.append(proc)
 
     def start_flask(self):
+        from flask import Flask, request, jsonify
+        from waitress import serve
+
         app = Flask(__name__)
         
         @app.route("/health")
@@ -185,6 +176,8 @@ class ServiceManager:
         self.start_frontend()
         self.start_backend()
         self.start_flask()
+
+        from smtp_server import smtp_server
         smtp_server.start()
         
         signal.signal(signal.SIGINT, self.shutdown)
@@ -197,6 +190,7 @@ class ServiceManager:
         print("\nInitiating shutdown...")
         self.should_exit.set()
         
+        from smtp_server import smtp_server
         smtp_server.shutdown()
         
         for proc in self.processes:
@@ -209,5 +203,5 @@ class ServiceManager:
         os._exit(0)
 
 if __name__ == '__main__':
-    manager = ServiceManager()
+    manager = ServiceManager(SERVER_IP)
     manager.run()

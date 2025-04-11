@@ -52,3 +52,4 @@ def create_eml(sender, recipient, subject, plain_text, html_text="", attachments
         f.write(msg.as_string())
 
     return msg.as_string()
+

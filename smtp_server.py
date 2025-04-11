@@ -1,17 +1,17 @@
+from email import *
+from pymongo import MongoClient
+from p2p import *
+
 import threading
 import socket
 import signal
 import re
 import os
 import time
-from email import *
-from pymongo import MongoClient
-from p2p import *
 
 # Configuration
 MAILDIR = "~/Maildir"
 HOSTNAME = socket.gethostname()
-SERVER_IP = peer.get_ip(HOSTNAME)
 SMTP_PORT = 2525
 DOMAIN = "lbp.com"
 

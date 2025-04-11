@@ -2,7 +2,7 @@
 
 # Python dependencies
 echo "Installing Python dependencies..."
-pip install -r requirements.txt || {
+pip3 install -r requirements.txt || {
     echo "Python dependency installation failed"
     exit 1
 }
