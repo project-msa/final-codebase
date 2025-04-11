@@ -1,0 +1,23 @@
+Content-Type: multipart/mixed; boundary="===============0943471049359700327=="
+MIME-Version: 1.0
+From: kh4rg0sh@lbp.com
+To: kh4rg0sh@lbp.com
+Subject: hello
+Date: Fri, 11 Apr 2025 16:08:41 -0000
+Message-ID: <174436792169.199122.13428202582820455634@kh4rg0sh>
+Authentication-Results: lbp.com; dkim=pass header.i=@lbp.com; spf=pass smtp.mailfrom=lbp.com; dmarc=pass policy.dmarc=lbp.com
+DKIM-Signature: a
+
+--===============0943471049359700327==
+Content-Type: multipart/alternative; boundary="===============8453454797725759557=="
+MIME-Version: 1.0
+
+--===============8453454797725759557==
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+adfadf
+--===============8453454797725759557==--
+
+--===============0943471049359700327==--
