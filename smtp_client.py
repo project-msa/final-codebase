@@ -24,7 +24,7 @@ RESPONSE_SUCCESS_CODES = {
     'DATA': b'354'
 }
 
-def send_email(data: Dict[str, str]) -> bytes:
+def send_email(data: Dict[str, str], signer) -> bytes:
     """Send email via SMTP protocol"""
     
     sender_email = data["from"]
@@ -35,19 +35,19 @@ def send_email(data: Dict[str, str]) -> bytes:
 
     dns_ip = peer.get_ip("dns")
     dns_port = 5353
-    dns_url = f"http://{dns_ip}:{dns_port}/retrieve"
+    dns_retrieve_url = f"http://{dns_ip}:{dns_port}/retrieve"
 
     mail_server_params = {
         "domain": recipient_domain,
         "type": "MX"
     }
-    recipient_mail_server = get_request(dns_url, mail_server_params, "message")
+    recipient_mail_server = get_request(dns_retrieve_url, mail_server_params, "message")
 
     recipient_ip_params = {
         "domain": recipient_mail_server,
         "type": "A"
     }
-    recipient_ip = get_request(dns_url, recipient_ip_params, "message")
+    recipient_ip = get_request(dns_retrieve_url, recipient_ip_params, "message")
 
     if ip_address(recipient_ip) is None:
         raise Exception(f"Recipient IP found {recipient_ip} is invalid")
@@ -56,7 +56,8 @@ def send_email(data: Dict[str, str]) -> bytes:
         sender_email,
         recipient_email,
         data["subject"],
-        data["body"]
+        data["body"],
+        signer
     )
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

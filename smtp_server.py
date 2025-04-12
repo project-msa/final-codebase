@@ -229,9 +229,7 @@ class SMTPServer:
             "subject": msg["Subject"],
             "date": msg["Date"],
             "message_id": msg["Message-ID"],
-            "plain_text": "",
-            "html_text": "",
-            "attachments": []
+            "plain_text": ""
         }
 
         # Process each part of the message
@@ -242,20 +240,6 @@ class SMTPServer:
             # Plain text
             if content_type == "text/plain" and "attachment" not in content_disposition:
                 result["body"] = part.get_payload(decode=True).decode()
-
-            # HTML text
-            elif content_type == "text/html" and "attachment" not in content_disposition:
-                result["html_text"] = part.get_payload(decode=True).decode()
-
-            # Attachments
-            elif "attachment" in content_disposition:
-                attachment = {
-                    "content_type": content_type,
-                    "filename": part.get_filename(),
-                    "payload": part.get_payload(decode=True),
-                    "size": len(part.get_payload(decode=True))
-                }
-                result["attachments"].append(attachment)
 
         return result
 

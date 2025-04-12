@@ -1,4 +1,5 @@
 from utils import *
+from p2p import *
 from smtp_client import *
 from pathlib import Path
 
@@ -20,6 +21,7 @@ RESPONSE_SUCCESS_CODES = {
 }
 
 HOSTNAME = socket.gethostname()
+DOMAIN = f"{HOSTNAME}.com"
 SERVER_IP = peer.get_ip(HOSTNAME)
 
 if SERVER_IP is None:
@@ -120,7 +122,7 @@ class ServiceManager:
         )
         self.processes.append(proc)
 
-    def start_flask(self):
+    def start_flask(self, signer):
         from flask import Flask, request, jsonify
         from waitress import serve
 
@@ -136,8 +138,9 @@ class ServiceManager:
                 return jsonify({"error": "Missing required fields"}), 400
 
             try:
-                response = send_email(data)
+                response = send_email(data, signer)
                 print(response)
+
                 return jsonify({
                     "message": "Email sent successfully",
                     "response": response.decode()
@@ -171,7 +174,30 @@ class ServiceManager:
         # Start services
         self.start_frontend()
         self.start_backend()
-        self.start_flask()
+
+        from algorithms.rsa_sha256 import RSA2048Signer
+
+        rsa_signer = RSA2048Signer(domain=DOMAIN)
+        private_key, _ = rsa_signer.generate_keys()
+        dkim_domain, dkim_record = rsa_signer.dkim_record()
+
+        headers = {
+            "Content-Type": "application/json"
+        }
+
+        body = {
+            "domain": dkim_domain,
+            "type": "TXT",
+            "record": dkim_record
+        }
+
+        dns_ip = peer.get_ip("dns")
+        dns_port = 5353
+        dns_publish_url = f"http://{dns_ip}:{dns_port}/publish"
+
+        print(dns_publish_url)
+        post_request(dns_publish_url, headers, body)
+        self.start_flask(rsa_signer)
 
         from smtp_server import smtp_server
         smtp_server.start()
