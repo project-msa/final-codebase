@@ -53,3 +53,9 @@ def create_eml(sender, recipient, subject, plain_text, html_text="", attachments
 
     return msg.as_string()
 
+import requests
+import json
+
+def get_request(url, params, response_field):
+    response = requests.get(url, params=params)
+    return json.loads(response.text)[response_field]

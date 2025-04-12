@@ -9,7 +9,7 @@ import Inbox from "@/components/Inbox";
 import Draft from "@/components/Draft";
 import Compose from "@/components/Compose"
 
-export const from = `${process.env.FROM}@lbp.com`
+export const from = `${process.env.FROM}@${process.env.FROM}.com`
 export const backendURL = process.env.API_URL
 
 const Send = async (to: string, subject: string, body: string, type: string): Promise<void> => {

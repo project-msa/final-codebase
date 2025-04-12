@@ -126,10 +126,6 @@ class ServiceManager:
 
         app = Flask(__name__)
         
-        @app.route("/health")
-        def health():
-            return jsonify({"status": "ok"})
-        
         @app.route("/send", methods=["POST"])
         def send() -> Tuple[Dict, int]:
             """Email sending endpoint"""

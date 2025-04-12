@@ -13,7 +13,7 @@ import time
 MAILDIR = "~/Maildir"
 HOSTNAME = socket.gethostname()
 SMTP_PORT = 2525
-DOMAIN = "lbp.com"
+DOMAIN = f"{HOSTNAME}.com"
 
 class SMTPServer:
     def __init__(self):

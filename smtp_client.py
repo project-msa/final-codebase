@@ -33,10 +33,24 @@ def send_email(data: Dict[str, str]) -> bytes:
     sender_hostname, sender_domain = sender_email.split("@")
     recipient_hostname, recipient_domain = recipient_email.split("@")
 
-    recipient_ip = peer.get_ip(recipient_hostname)
+    dns_ip = peer.get_ip("dns")
+    dns_port = 5353
+    dns_url = f"http://{dns_ip}:{dns_port}/retrieve"
+
+    mail_server_params = {
+        "domain": recipient_domain,
+        "type": "MX"
+    }
+    recipient_mail_server = get_request(dns_url, mail_server_params, "message")
+
+    recipient_ip_params = {
+        "domain": recipient_mail_server,
+        "type": "A"
+    }
+    recipient_ip = get_request(dns_url, recipient_ip_params, "message")
 
     if ip_address(recipient_ip) is None:
-        raise Exception(f"Hostname {recipient_hostname} not found")
+        raise Exception(f"Recipient IP found {recipient_ip} is invalid")
     
     email_message = create_eml(
         sender_email,
