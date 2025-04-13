@@ -1,17 +1,17 @@
-Content-Type: multipart/mixed; boundary="===============1471798323757379452=="
+Content-Type: multipart/mixed; boundary="===============5292954592138051837=="
 MIME-Version: 1.0
 From: kh4rg0sh@kh4rg0sh.com
 To: kh4rg0sh@kh4rg0sh.com
-Subject: hello 
-Date: Sun, 13 Apr 2025 15:13:22 -0000
-Message-ID: <174453740208.871966.7522091496642738251@kh4rg0sh>
+Subject: cookies
+Date: Sun, 13 Apr 2025 17:07:36 -0000
+Message-ID: <174454425641.917777.4569070558177636896@kh4rg0sh>
 Authentication-Results: kh4rg0sh.com; dkim=pass header.i=@kh4rg0sh.com; spf=pass smtp.mailfrom=kh4rg0sh.com; dmarc=pass policy.dmarc=kh4rg0sh.com
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kh4rg0sh.com; s=rsa-default; h=From To Subject Date; bh=V69rGPKV+pzmFBgc/XT3syJBp7vlwz9FhOkKXw6JQ78=; b=GwcktqfXZCo14wSulSNF/e+vwlHMUWDltAbPzRy7m1wLppjibwqul23wwVq2jEELnsjXjNXFBzzxb7EvvA+cLCSrqr733hUUUNtbn+XIDKdx5PCo9VIMz1n2V//0OO3YZy9rHtFbfqbKCTRg/VJBW9/FZ/cNyD2EzGsKDandFQtgHxWz3zmdbWYa1fXKS8L08OAgaoJWKOGWz+EAzQ9C4smoHutq0F9g/v3SU2XGo7Pwy9Ex3yPX4dAP3oeIaTyR2NqbivqJAeMEwqSvnU05VTKW0d5rlGPqt9hzH5MAkMFDOLhT1BbHwFk0LGUYN7ZLu9WrFgyngjeqVC/r/qxL6g==
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kh4rg0sh.com; s=rsa-default; h=From To Subject Date; bh=IikyiupaqZXuQ7h/mZu/f98eiGwpzN0dCvUp70D2KRs=; b=DaBNWyuUYyD8ks/Y/LFOQkPMG/fQXIWOPckGI6bd4uy9AUi22cH8wG4vm++VwaiGmDC7GdAKykZTOCTC8XkkTOFT94miZTCY7pAj5imePGUha20rCGGcXHzi1utEwAia4clRNnHiVR8cZ7yXb5x4AK53nNfPM7MYuEzW18D3/ZhPMoyEkl7UXraWp8u94h8FyIN3L/9Acdy0xQYFtqSavPS6WlL2YtznxQatGY1hvZToQqwLDPD7xeiEoVRe1GXZKw0gzm80Ntm9WWOrmSTIxR+3WJ4z/0R77hGuZpMifF/mhDtGNRzOm5MkT8JXRfu/SoPtBN1Y0AGyNapugnBQLA==
 
---===============1471798323757379452==
+--===============5292954592138051837==
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 
-this is a message
---===============1471798323757379452==--
+send cookies
+--===============5292954592138051837==--
