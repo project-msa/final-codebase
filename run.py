@@ -195,7 +195,6 @@ class ServiceManager:
         dns_port = 5353
         dns_publish_url = f"http://{dns_ip}:{dns_port}/publish"
 
-        print(dns_publish_url)
         post_request(dns_publish_url, headers, body)
         self.start_flask(rsa_signer)
 

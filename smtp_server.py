@@ -1,6 +1,8 @@
 from email import *
 from pymongo import MongoClient
+from utils import *
 from p2p import *
+from algorithms.rsa_sha256 import *
 
 import threading
 import socket
@@ -174,20 +176,8 @@ class SMTPServer:
                                 break
                     
                     parsed_eml = self.parse_eml(eml)
-                    email_entry = {
-                        "type": "Inbox",
-                        "from": parsed_eml["sender"],
-                        "to": parsed_eml["recipient"],
-                        "subject": parsed_eml["subject"],
-                        "body": parsed_eml["body"],
-                        "time": str(time.time()),
-                        "read": False,
-                        "starred": False
-                    }
-
-                    inserted_id = self.insert_email(email_entry)
-                    print(f"Inserted email with ID: {inserted_id}")
-
+                    self.verify_email_integrity(parsed_eml)
+                    
                 # QUIT Command
                 elif command == "QUIT":
                     client_socket.send(b"221 2.0.0 Bye \n")
@@ -203,6 +193,47 @@ class SMTPServer:
             
         finally:
             client_socket.close()
+
+    def verify_email_integrity(self, parsed_eml):
+        params = {
+            "domain": f"rsa-default._domainkey.{parsed_eml["sender"].split("@")[1]}",
+            "type": "TXT"
+        }
+
+        dns_ip = peer.get_ip("dns")
+        dns_port = 5353
+        dns_retrieve_url = f"http://{dns_ip}:{dns_port}/retrieve"
+
+        dkim_public_key = get_request(dns_retrieve_url, params, "message")
+        rsa_verifier = RSA2048Verifier(dkim_public_key)
+
+        dkim_signature = parsed_eml["dkim-signature"]
+        email_headers = {
+            "From": parsed_eml["sender"],
+            "To": parsed_eml["recipient"],
+            "Subject": parsed_eml["subject"],
+            "Date": parsed_eml["date"]
+        }
+
+        headers_to_sign = ["From", "To", "Subject", "Date"]
+        header_string = "\r\n".join(
+            f"{h}: {email_headers[h]}" for h in headers_to_sign if h in email_headers
+        )
+
+        if rsa_verifier.verify_dkim_signature(dkim_signature, header_string, parsed_eml["body"]):
+            email_entry = {
+                "type": "Inbox",
+                "from": parsed_eml["sender"],
+                "to": parsed_eml["recipient"],
+                "subject": parsed_eml["subject"],
+                "body": parsed_eml["body"],
+                "time": str(time.time()),
+                "read": False,
+                "starred": False
+            }
+
+            inserted_id = self.insert_email(email_entry)
+            print(f"Inserted email with ID: {inserted_id}")
 
     def get_db_connection(self, DB_NAME):
         MONGO_URI = "mongodb://localhost:27017/"
@@ -229,6 +260,7 @@ class SMTPServer:
             "subject": msg["Subject"],
             "date": msg["Date"],
             "message_id": msg["Message-ID"],
+            "dkim-signature": msg["DKIM-Signature"],
             "plain_text": ""
         }
 

@@ -20,9 +20,7 @@ def create_eml(sender: str, recipient: str, subject: str, body: str, signer, out
 
     msg["Authentication-Results"] = f"{sender_domain}; dkim=pass header.i=@{sender_domain}; spf=pass smtp.mailfrom={sender_domain}; dmarc=pass policy.dmarc={sender_domain}"
 
-    alt_part = MIMEMultipart("alternative")
-    alt_part.attach(MIMEText(body, "plain"))
-    msg.attach(alt_part)
+    msg.attach(MIMEText(body, "plain"))
 
     dkim_signature = signer.generate_dkim_signature(msg, body)
     msg["DKIM-Signature"] = dkim_signature

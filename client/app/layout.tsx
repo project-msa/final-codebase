@@ -1,14 +1,5 @@
-import type React from "react"
-import "./globals.css"
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-
-const inter = Inter({ subsets: ["latin"] })
-
-export const metadata: Metadata = {
-  title: "Mailing Client",
-  description: "A dark-themed mailing client built with Next.js",
-}
+import '@fontsource-variable/inter';
+import './globals.css';
 
 export default function RootLayout({
   children,
@@ -17,8 +8,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-gray-900 text-gray-100`}>{children}</body>
+      <body className="bg-gray-900 text-gray-100">{children}</body>
     </html>
   )
 }
-
