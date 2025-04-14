@@ -163,5 +163,16 @@ class P2PNode:
             print(f"{peer.id} {peer.ip} {peer.port} {peer.timestamp}")
         print()
 
-ip_address(sys.argv[1])
-peer = P2PNode(sys.argv[1])
+strargv = [str(x) for x in sys.argv]
+
+if "-b" in strargv or "--broadcast-ip" in strargv:
+    position = 1 + (strargv.index("-b") if strargv.index("-b") != -1 else strargv.index("--broadcast-ip"))
+    if len(strargv) <= position:
+        raise Exception("Incorrect use of the flag \"-b\" or \"--broadcast-ip\". Please specify the Broadcast IP following the flag.")
+    broadcast_ip = strargv[position]
+    ip_address(broadcast_ip)
+
+else:
+    raise Exception("Please specify the Broadcast IP of the network you are connected to.")
+
+peer = P2PNode(broadcast_ip)

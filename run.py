@@ -176,15 +176,33 @@ class ServiceManager:
         self.start_backend()
 
         from algorithms.rsa_sha256 import RSA2048Signer
+        from algorithms.ed25519_sha256 import ED25519Signer
+        from algorithms.ecdsa_sha256 import ECDSASigner
 
-        rsa_signer = RSA2048Signer(domain=DOMAIN)
-        private_key, _ = rsa_signer.generate_keys()
-        dkim_domain, dkim_record = rsa_signer.dkim_record()
+        strargv: List[str] = [str(x) for x in sys.argv]
+        signer = RSA2048Signer(domain=DOMAIN)
 
+        if "-a" in strargv or "--algorithm" in strargv:
+            position = 1 + (strargv.index("-a") if strargv.index("-a") != -1 else strargv.index("--algorithm"))
+            if len(strargv) <= position:
+                raise Exception("Incorrect use of the flag \"-a\" or \"--algorithm\". Please specify the signature algorithm following the flag \"-a\".")
+            
+            algorithm: str = strargv[position]
+
+            if "rsa" in algorithm.lower():
+                signer = RSA2048Signer(domain=DOMAIN)
+
+            elif "ed25519" in algorithm.lower():
+                signer = ED25519Signer(domain=DOMAIN)
+
+            elif "ecdsa" in algorithm.lower():
+                signer = ECDSASigner(domain=DOMAIN)
+
+        signer.generate_keys()
+        dkim_domain, dkim_record = signer.dkim_record()
         headers = {
             "Content-Type": "application/json"
         }
-
         body = {
             "domain": dkim_domain,
             "type": "TXT",
@@ -196,7 +214,7 @@ class ServiceManager:
         dns_publish_url = f"http://{dns_ip}:{dns_port}/publish"
 
         post_request(dns_publish_url, headers, body)
-        self.start_flask(rsa_signer)
+        self.start_flask(signer)
 
         from smtp_server import smtp_server
         smtp_server.start()

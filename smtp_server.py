@@ -2,7 +2,10 @@ from email import *
 from pymongo import MongoClient
 from utils import *
 from p2p import *
+
 from algorithms.rsa_sha256 import *
+from algorithms.ed25519_sha256 import *
+from algorithms.ecdsa_sha256 import *
 
 import threading
 import socket
@@ -196,7 +199,7 @@ class SMTPServer:
 
     def verify_email_integrity(self, parsed_eml):
         params = {
-            "domain": f"rsa-default._domainkey.{parsed_eml["sender"].split("@")[1]}",
+            "domain": f"default._domainkey.{parsed_eml["sender"].split("@")[1]}",
             "type": "TXT"
         }
 
@@ -205,8 +208,26 @@ class SMTPServer:
         dns_retrieve_url = f"http://{dns_ip}:{dns_port}/retrieve"
 
         dkim_public_key = get_request(dns_retrieve_url, params, "message")
-        rsa_verifier = RSA2048Verifier(dkim_public_key)
 
+        strargv: List[str] = [str(x) for x in sys.argv]
+        verifier = RSA2048Verifier(dkim_public_key)
+
+        if "-a" in strargv or "--algorithm" in strargv:
+            position = 1 + (strargv.index("-a") if strargv.index("-a") != -1 else strargv.index("--algorithm"))
+            if len(strargv) <= position:
+                raise Exception("Incorrect use of the flag \"-a\" or \"--algorithm\". Please specify the signature algorithm following the flag \"-a\".")
+            
+            algorithm: str = strargv[position]
+
+            if "rsa" in algorithm.lower():
+                verifier = RSA2048Verifier(dkim_public_key)
+
+            elif "ed25519" in algorithm.lower():
+                verifier = ED25519Verifier(dkim_public_key)
+
+            elif "ecdsa" in algorithm.lower():
+                verifier = ECDSAVerifier(dkim_public_key)
+                
         dkim_signature = parsed_eml["dkim-signature"]
         email_headers = {
             "From": parsed_eml["sender"],
@@ -220,7 +241,7 @@ class SMTPServer:
             f"{h}: {email_headers[h]}" for h in headers_to_sign if h in email_headers
         )
 
-        if rsa_verifier.verify_dkim_signature(dkim_signature, header_string, parsed_eml["body"]):
+        if verifier.verify_dkim_signature(dkim_signature, header_string, parsed_eml["body"]):
             email_entry = {
                 "type": "Inbox",
                 "from": parsed_eml["sender"],

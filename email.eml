@@ -1,17 +1,17 @@
-Content-Type: multipart/mixed; boundary="===============8377899802213093621=="
+Content-Type: multipart/mixed; boundary="===============3276616506030508985=="
 MIME-Version: 1.0
 From: kh4rg0sh@kh4rg0sh.com
-To: death@death.com
-Subject: sukhi
-Date: Sun, 13 Apr 2025 17:44:53 -0000
-Message-ID: <174454649362.933104.11316136622240262468@kh4rg0sh>
+To: kh4rg0sh@kh4rg0sh.com
+Subject: hello
+Date: Mon, 14 Apr 2025 10:20:47 -0000
+Message-ID: <174460624755.88504.8045037143934725948@kh4rg0sh>
 Authentication-Results: kh4rg0sh.com; dkim=pass header.i=@kh4rg0sh.com; spf=pass smtp.mailfrom=kh4rg0sh.com; dmarc=pass policy.dmarc=kh4rg0sh.com
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kh4rg0sh.com; s=rsa-default; h=From To Subject Date; bh=Ax/7Jhis31ybgqYmD9Uvo4m/1w4wbaRGnxC8DTWwkoY=; b=bxeTo9/HecqkjWx5Mp5CnmwqifZtPkIzy72kxFhb8aF5Q7uw4Ho8WQ1jZcdZ5VxFs/xf0zmEcvH9w/dPDZURNy42bwK9PL2GnHoCVLGmyhpd4pvAplXfibo/WYHpGrd4VMYNU432S8QPsltJLZyBtJuu242CnJMz4uTGleagK8gaPtNLeetMbOLQPY+x4ONb1VVnNEMMcr+fQFHsqpI9gxCWJkJO314Zog/c062dkU2a5Z2f+EoQBfq/apIAJIAJxR8sjreA0pt5zO6CX2rWm83gBk6ln+9ZdnvtKViOO2Nm3ac06NVP/dGEwaLHN4PJtO939IsuPDM57M76S4rhEw==
+DKIM-Signature: v=1; a=ecdsa-sha256; c=relaxed/relaxed; d=kh4rg0sh.com; s=default; h=From To Subject Date; bh=T3LjtuFp5LLyK3vlYR4Uc89U4eAnnzwd8CK5YcOYiAM=; b=MEUCIQCdt+en2rWyA42bGMpzmpD5pDYYz7eHxxbAUko6E8OPPgIgKhJAl2GfK++ieVA+9LvPTnX+b+MFVQoO0bdl/RkYqOI=
 
---===============8377899802213093621==
+--===============3276616506030508985==
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 
-muthman singh
---===============8377899802213093621==--
+does ecdsa work please
+--===============3276616506030508985==--
