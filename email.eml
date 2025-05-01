@@ -1,17 +1,17 @@
-Content-Type: multipart/mixed; boundary="===============3276616506030508985=="
+Content-Type: multipart/mixed; boundary="===============0018769722641390659=="
 MIME-Version: 1.0
 From: kh4rg0sh@kh4rg0sh.com
 To: kh4rg0sh@kh4rg0sh.com
-Subject: hello
-Date: Mon, 14 Apr 2025 10:20:47 -0000
-Message-ID: <174460624755.88504.8045037143934725948@kh4rg0sh>
+Subject: ed25519 wotkinh?
+Date: Thu, 01 May 2025 16:13:44 -0000
+Message-ID: <174609622418.1975717.14671962574979338503@kh4rg0sh>
 Authentication-Results: kh4rg0sh.com; dkim=pass header.i=@kh4rg0sh.com; spf=pass smtp.mailfrom=kh4rg0sh.com; dmarc=pass policy.dmarc=kh4rg0sh.com
-DKIM-Signature: v=1; a=ecdsa-sha256; c=relaxed/relaxed; d=kh4rg0sh.com; s=default; h=From To Subject Date; bh=T3LjtuFp5LLyK3vlYR4Uc89U4eAnnzwd8CK5YcOYiAM=; b=MEUCIQCdt+en2rWyA42bGMpzmpD5pDYYz7eHxxbAUko6E8OPPgIgKhJAl2GfK++ieVA+9LvPTnX+b+MFVQoO0bdl/RkYqOI=
+DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=kh4rg0sh.com; s=default; h=From To Subject Date; bh=IOoNyfjhGrYElm2qDccyWfUkanzxpjDpybTlERgO3Mc=; b=362vLEpYLpRao5dVIBCIlxJjwToHMxrl81OOAut9SQV7RjgpWVpqBxgZsSO/NwsOUYlfe7K7TyH69xI41xBXCQ==
 
---===============3276616506030508985==
+--===============0018769722641390659==
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 
-does ecdsa work please
---===============3276616506030508985==--
+working or no
+--===============0018769722641390659==--

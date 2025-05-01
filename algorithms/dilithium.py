@@ -1,7 +1,5 @@
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, PrivateFormat, NoEncryption
-from cryptography.hazmat.backends import default_backend
+from .dilithium_helpers.mldsa import ML_DSA
+
 import hashlib
 import base64
 import re
@@ -51,32 +49,68 @@ def canonicalize_headers(headers: str, signed_headers: list, method: str = "simp
     else:
         raise ValueError(f"Unknown canonicalization method: {method}")
 
-class RSA2048Signer:
-    def __init__(self, selector="default", domain="example.com") -> None:
+class DilithiumSigner:
+    _ML_DSA_44_PARAMS = {
+        "d": 13,
+        "tau": 39,
+        "gamma_1": 131072,
+        "gamma_2": 95232,
+        "k": 4,
+        "l": 4,
+        "eta": 2,
+        "omega": 80,
+        "c_tilde_bytes": 32,
+    }
+
+    _ML_DSA_65_PARAMS = {
+        "d": 13,
+        "tau": 49,
+        "gamma_1": 524288,
+        "gamma_2": 261888,
+        "k": 6,
+        "l": 5,
+        "eta": 4,
+        "omega": 55,
+        "c_tilde_bytes": 48,
+    }
+
+    _ML_DSA_87_PARAMS = {
+        "d": 13,
+        "tau": 60,
+        "gamma_1": 524288,
+        "gamma_2": 261888,
+        "k": 8,
+        "l": 7,
+        "eta": 2,
+        "omega": 75,
+        "c_tilde_bytes": 64,
+    }
+
+    def __init__(self, security_level: str, selector="default", domain="example.com") -> None:
+        if security_level == "44":
+            self.params = self._ML_DSA_44_PARAMS
+        elif security_level == "65":
+            self.params = self._ML_DSA_65_PARAMS
+        elif security_level == "87":
+            self.params = self._ML_DSA_87_PARAMS
+        else:
+            raise ValueError("Invalid security level. Choose '44', '65', or '87'.")
+
+        self.dilithium_model: ML_DSA = ML_DSA(self.params)
+
         self.selector = selector
         self.domain = domain
         self.private_key = None
         self.public_key = None
 
     def generate_keys(self) -> tuple:
-        """Generate 2048-bit RSA key pair"""
-        self.private_key = rsa.generate_private_key(
-            public_exponent=65537,
-                key_size=2048
-        )
-        self.public_key = self.private_key.public_key()
+        """Generate Dilithium key pair"""
+        self.public_key, self.private_key = self.dilithium_model.keygen()
         return self.private_key, self.public_key
     
     def sign(self, message: bytes) -> bytes:
-        """Sign message using RSA-PSS with SHA-256"""
-        signature = self.private_key.sign(
-            message,
-            padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=32
-            ),
-            hashes.SHA256()
-        )
+        """Sign message using dilithium"""
+        signature = self.dilithium_model.sign(self.private_key, message)
         return base64.b64encode(signature)
     
     def generate_dkim_signature(self, email_headers: dict, body: str) -> str:
@@ -93,82 +127,97 @@ class RSA2048Signer:
                                             "relaxed")
 
         dkim_header = (
-            f"v=1; a=rsa-sha256; c=relaxed/relaxed; "
+            f"v=1; a=dilithium; c=relaxed/relaxed; "
             f"d={self.domain}; s={self.selector}; "
             f"h={' '.join(headers_to_sign)}; "
             f"bh={body_hash_b64}; "
             f"b="
         )
 
-        signature = self.private_key.sign(
-            canonical_headers.encode(),
-            padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=32
-            ),
-            hashes.SHA256()
-        )
+        signature = self.dilithium_model.sign(self.private_key, canonical_headers.encode())
         signature_b64 = base64.b64encode(signature).decode()
         return f"{dkim_header}{signature_b64}"
     
     def dkim_record(self) -> str:
         """Generate DKIM DNS TXT record"""
-        pub_key_der = self.public_key.public_bytes(
-            Encoding.DER,
-            PublicFormat.SubjectPublicKeyInfo
-        )
-        pub_key_b64 = base64.b64encode(pub_key_der).decode()
-        return f"{self.selector}._domainkey.{self.domain}", f"v=DKIM1; k=rsa; p={pub_key_b64}"
 
-class RSA2048Verifier:
-    def __init__(self, dkim_record: str):
+        pub_key_b64 = base64.b64encode(self.public_key).decode()
+        return f"{self.selector}._domainkey.{self.domain}", f"v=DKIM1; k=dilithium; p={pub_key_b64}"
+
+class DilithiumVerifier:
+    _ML_DSA_44_PARAMS = {
+        "d": 13,
+        "tau": 39,
+        "gamma_1": 131072,
+        "gamma_2": 95232,
+        "k": 4,
+        "l": 4,
+        "eta": 2,
+        "omega": 80,
+        "c_tilde_bytes": 32,
+    }
+
+    _ML_DSA_65_PARAMS = {
+        "d": 13,
+        "tau": 49,
+        "gamma_1": 524288,
+        "gamma_2": 261888,
+        "k": 6,
+        "l": 5,
+        "eta": 4,
+        "omega": 55,
+        "c_tilde_bytes": 48,
+    }
+
+    _ML_DSA_87_PARAMS = {
+        "d": 13,
+        "tau": 60,
+        "gamma_1": 524288,
+        "gamma_2": 261888,
+        "k": 8,
+        "l": 7,
+        "eta": 2,
+        "omega": 75,
+        "c_tilde_bytes": 64,
+    }
+
+    def __init__(self, security_level: str, dkim_record: str):
+        if security_level == "44":
+            self.params = self._ML_DSA_44_PARAMS
+        elif security_level == "65":
+            self.params = self._ML_DSA_65_PARAMS
+        elif security_level == "87":
+            self.params = self._ML_DSA_87_PARAMS
+        else:
+            raise ValueError("Invalid security level. Choose '44', '65', or '87'.")
+
+        self.dilithium_model: ML_DSA = ML_DSA(self.params)        
         self.public_key = self._extract_public_key(dkim_record)
-    
-    def _extract_public_key(self, dkim_record: str):
-        """Extract and reconstruct public key from DKIM record"""
+
+    def _extract_public_key(self, dkim_record: str) -> bytes:
         clean_record = dkim_record.strip()
         match = re.search(r'p=([A-Za-z0-9+/=]+)', clean_record)
         if not match:
             raise ValueError("Invalid DKIM record - missing public key")
         
         pub_key_b64 = match.group(1)
-        
-        try:
-            der_bytes = base64.b64decode(pub_key_b64)
-            
-            public_key = serialization.load_der_public_key(
-                der_bytes,
-                backend=default_backend()
-            )
-            
-            if public_key.key_size != 2048:
-                raise ValueError("Key size mismatch - expected 2048 bits")
-                
-            return public_key
-            
-        except Exception as e:
-            raise ValueError(f"Failed to load public key: {str(e)}")
-    
-    def verify(self, message: bytes, signature_b64: str) -> bool:
-        """Verify RSA signature"""
+        public_key = base64.b64decode(pub_key_b64)
+
+        return public_key
+
+    def verify(self, message: bytes, signature_b64: str) -> bool: 
         try:
             signature = base64.b64decode(signature_b64)
-            self.public_key.verify(
-                signature,
-                message,
-                padding.PSS(
-                    mgf=padding.MGF1(hashes.SHA256()),
-                    salt_length=32
-                ),
-                hashes.SHA256()
-            )
-            return True
+
+            verification_result = self.dilithium_model.verify(self.public_key, message, signature)
+            return verification_result
+        
         except Exception:
-            return False
+            return False    
         
     def verify_dkim_signature(self, dkim_signature: str, email_headers: str, email_body: str) -> bool:
         """
-        Verify a DKIM signature using RSA-SHA256
+        Verify a DKIM signature using Dilithium
         
         Args:
             dkim_signature: The DKIM-Signature header value
@@ -178,18 +227,19 @@ class RSA2048Verifier:
         Returns:
             bool: True if both body hash (bh) and signature (b) verify, False otherwise
         """
+
         params = {}
         for param in dkim_signature.split(";"):
             if "=" in param:
                 key, value = param.split("=", 1)
                 params[key.strip()] = value.strip()
-        
-        if params.get("a", "").lower() != "rsa-sha256":
-            raise ValueError("Unsupported algorithm, expected rsa-sha256")
+
+        if params.get("a", "").lower() != "dilithium":
+            raise ValueError("Unsupported algorithm, expected dilithium")
         
         bh = base64.b64decode(params.get("bh", ""))
         b = base64.b64decode(params.get("b", ""))
-        
+
         canonical_body = canonicalize_body(email_body, "relaxed")
         computed_bh = hashlib.sha256(canonical_body.encode()).digest()
         
@@ -201,17 +251,7 @@ class RSA2048Verifier:
         canonical_headers = canonicalize_headers(email_headers, 
                                             headers_to_sign, 
                                             "relaxed")
-
-        self.public_key.verify(
-            b,
-            canonical_headers.encode(),
-            padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=32
-            ),
-            hashes.SHA256()
-        )
         
-        return True
-            
-        
+        verification_result = self.dilithium_model.verify(self.public_key, canonical_headers.encode(), b)
+        return verification_result
+    

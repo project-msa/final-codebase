@@ -6,6 +6,7 @@ from p2p import *
 from algorithms.rsa_sha256 import *
 from algorithms.ed25519_sha256 import *
 from algorithms.ecdsa_sha256 import *
+from algorithms.dilithium import *
 
 import threading
 import socket
@@ -210,7 +211,6 @@ class SMTPServer:
         dkim_public_key = get_request(dns_retrieve_url, params, "message")
 
         strargv: List[str] = [str(x) for x in sys.argv]
-        verifier = RSA2048Verifier(dkim_public_key)
 
         if "-a" in strargv or "--algorithm" in strargv:
             position = 1 + (strargv.index("-a") if strargv.index("-a") != -1 else strargv.index("--algorithm"))
@@ -227,6 +227,14 @@ class SMTPServer:
 
             elif "ecdsa" in algorithm.lower():
                 verifier = ECDSAVerifier(dkim_public_key)
+
+            elif "dilithium" in algorithm.lower():
+                if algorithm.lower() == "dilithium-44":
+                    verifier = DilithiumVerifier("44", dkim_public_key)
+                elif algorithm.lower() == "dilithium-65":
+                    verifier = DilithiumVerifier("65", dkim_public_key)
+                elif algorithm.lower() == "dilithium-87":
+                    verifier = DilithiumVerifier("87", dkim_public_key)
                 
         dkim_signature = parsed_eml["dkim-signature"]
         email_headers = {

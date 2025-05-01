@@ -178,9 +178,9 @@ class ServiceManager:
         from algorithms.rsa_sha256 import RSA2048Signer
         from algorithms.ed25519_sha256 import ED25519Signer
         from algorithms.ecdsa_sha256 import ECDSASigner
+        from algorithms.dilithium import DilithiumSigner
 
         strargv: List[str] = [str(x) for x in sys.argv]
-        signer = RSA2048Signer(domain=DOMAIN)
 
         if "-a" in strargv or "--algorithm" in strargv:
             position = 1 + (strargv.index("-a") if strargv.index("-a") != -1 else strargv.index("--algorithm"))
@@ -197,6 +197,14 @@ class ServiceManager:
 
             elif "ecdsa" in algorithm.lower():
                 signer = ECDSASigner(domain=DOMAIN)
+
+            elif "dilithium" in algorithm.lower():
+                if algorithm.lower() == "dilithium-44":
+                    signer = DilithiumSigner("44", domain=DOMAIN)
+                elif algorithm.lower() == "dilithium-65":
+                    signer = DilithiumSigner("65", domain=DOMAIN)
+                elif algorithm.lower() == "dilithium-87":
+                    signer = DilithiumSigner("87", domain=DOMAIN)
 
         signer.generate_keys()
         dkim_domain, dkim_record = signer.dkim_record()
