@@ -40,20 +40,20 @@ const Compose = ({ onBack, clickBack }: ComposeProps) => {
 			return { isValid: false, message: "Email address cannot contain spaces" }
 		}
 
-		if (email !== email.toLowerCase()) {
-			return { isValid: false, message: "Email address must be lowercase" }
-		}
+		// if (email !== email.toLowerCase()) {
+		// 	return { isValid: false, message: "Email address must be lowercase" }
+		// }
 
 		if ((email.match(/@/g) || []).length !== 1) {
 			return { isValid: false, message: "Email address must contain exactly one @ symbol" }
 		}
 
-		if (!emailRegex.test(email)) {
-			return {
-				isValid: false,
-				message: "Invalid email format. Please use format: recipient@example.com with lowercase letters only",
-			}
-		}
+		// if (!emailRegex.test(email)) {
+		// 	return {
+		// 		isValid: false,
+		// 		message: "Invalid email format. Please use format: recipient@example.com with lowercase letters only",
+		// 	}
+		// }
 
 		return { isValid: true, message: "" }
 	}

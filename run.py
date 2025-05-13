@@ -100,7 +100,8 @@ class ServiceManager:
             cwd='client',
             env=env,
             stdout=sys.stdout,
-            stderr=sys.stderr
+            stderr=sys.stderr,
+            shell=True
         )
         self.processes.append(proc)
 
@@ -118,7 +119,8 @@ class ServiceManager:
             cwd='server',
             env=env,
             stdout=sys.stdout,
-            stderr=sys.stderr
+            stderr=sys.stderr,
+            shell=True
         )
         self.processes.append(proc)
 

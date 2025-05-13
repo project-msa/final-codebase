@@ -169,16 +169,19 @@ class SMTPServer:
                     with open(f"{mail_sender}/{counter}.txt", "w") as open_file:
 
                         while True:
-                            data_message = client_socket.recv(1024).strip().decode()
-                            print(data_message)
-                            
-                            if data_message != ".":
-                                eml += data_message
-                                open_file.write(data_message)
+                            data_message = client_socket.recv(1024)
+                            print(data_message, len(data_message))
+
+                            if b"\r\n.\r\n" not in data_message:
+                                eml += data_message.decode()
+                                open_file.write(data_message.decode())
                             else:
+                                decoded_data = data_message.split(b"\r\n.\r\n")[0].decode()
+                                eml += decoded_data
+                                open_file.write(decoded_data)
                                 client_socket.send(b"250 OK: Message accepted \n")
                                 break
-                    
+
                     parsed_eml = self.parse_eml(eml)
                     self.verify_email_integrity(parsed_eml)
                     
@@ -200,7 +203,7 @@ class SMTPServer:
 
     def verify_email_integrity(self, parsed_eml):
         params = {
-            "domain": f"default._domainkey.{parsed_eml["sender"].split("@")[1]}",
+            "domain": f'default._domainkey.{parsed_eml["sender"].split("@")[1]}',
             "type": "TXT"
         }
 

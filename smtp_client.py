@@ -62,7 +62,6 @@ def send_email(data: Dict[str, str], signer) -> bytes:
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((recipient_ip, SMTP_PORT))
-        
         # SMTP Protocol Handshake
         commands = [
             (f"HELO {sender_domain}", 'CONNECTION'),
@@ -77,5 +76,5 @@ def send_email(data: Dict[str, str], signer) -> bytes:
 
         print(s.recv(1024))
         s.send(email_message.encode())
-        s.send(b"\r\n.")
+        s.send(b'\r\n.\r\n')
         return s.recv(1024)

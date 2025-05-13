@@ -1,71 +1,147 @@
-import timeit
-import sys
-from algorithms import rsa_sha256
-from cryptography.hazmat.primitives import hashes, serialization
+import sys, os, timeit, psutil
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from colorama import init, Fore, Style
+from typing import Dict, List, Tuple
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-test_message = b"Benchmarking RSA vs Dilithium in DKIM"
-test_headers = {"From": "test@example.com", "To": "recipient@example.com", 
-                "Subject": "Test Email", "Date": "Mon, 01 Jan 2024 00:00:00 +0000"}
-test_body = "This is a test email body."
+from algorithms import rsa_sha256, dilithium, ecdsa_sha256, ed25519_sha256
+from multiprocessing import freeze_support
 
-signer = rsa_sha256.RSA2048Signer(domain="example.com", selector="default")
+# Initialize colorama
+init()
 
-## key generation
-keygen_time = timeit.timeit(signer.generate_keys, number=100) / 100
-print(f"Average RSA key generation time: {keygen_time * 1000:.2f} ms")
+# Constants
+NUM_KEYGEN_ITERATIONS = 50
+NUM_SIGN_ITERATIONS = 1000
+TEST_MESSAGE = b"Benchmarking signature algorithms"
 
-## public key/private key sizes
-private_key, public_key = signer.generate_keys()
-rsa_priv_size = sys.getsizeof(private_key.private_bytes(encoding=serialization.Encoding.PEM, format=serialization.PrivateFormat.PKCS8, encryption_algorithm=serialization.NoEncryption()))
-rsa_pub_size = sys.getsizeof(private_key.public_key().public_bytes(encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo))
-print(f"RSA Private Key: {rsa_priv_size} bytes | Public Key: {rsa_pub_size} bytes")
+# Result paths
+RESULTS_DIR = os.path.join(os.path.dirname(__file__), "results")
+CSV_DIR = os.path.join(RESULTS_DIR, "csv")
+IMAGES_DIR = os.path.join(RESULTS_DIR, "images")
 
-## signature generation
-sign_time = timeit.timeit(lambda: signer.sign(test_message), number=100) / 100
-print(f"Average RSA signing time: {sign_time * 1000:.2f} ms")
+def collect_metrics(name: str, signer_class, security_level=None) -> Dict:
+    print(f"\n{Fore.CYAN}Benchmarking {name}...{Style.RESET_ALL}")
+    metrics = {
+        'algorithm': name,
+        'keygen_times': [],
+        'sign_times': [],
+        'signature_sizes': [],
+        'memory_usage': []
+    }
+    
+    # Initialize signer
+    signer = signer_class(security_level=security_level) if security_level else signer_class()
+    
+    # Collect key generation metrics
+    print(f"{Fore.YELLOW}Running {NUM_KEYGEN_ITERATIONS} key generation iterations...{Style.RESET_ALL}")
+    for _ in range(NUM_KEYGEN_ITERATIONS):
+        start_time = timeit.default_timer()
+        private_key, public_key = signer.generate_keys()
+        metrics['keygen_times'].append((timeit.default_timer() - start_time) * 1000)
+        
+        process = psutil.Process()
+        metrics['memory_usage'].append(process.memory_info().rss / (1024 * 1024))
+    
+    # Collect signing metrics
+    print(f"{Fore.YELLOW}Running {NUM_SIGN_ITERATIONS} signing iterations...{Style.RESET_ALL}")
+    for _ in range(NUM_SIGN_ITERATIONS):
+        start = timeit.default_timer()
+        signature = signer.sign(TEST_MESSAGE)
+        metrics['sign_times'].append((timeit.default_timer() - start) * 1000)
+        metrics['signature_sizes'].append(len(signature))
+    
+    # Calculate statistics
+    stats = {
+        'keygen_mean_ms': np.mean(metrics['keygen_times']),
+        'keygen_std_ms': np.std(metrics['keygen_times']),
+        'sign_mean_ms': np.mean(metrics['sign_times']),
+        'sign_std_ms': np.std(metrics['sign_times']),
+        'signature_size_mean_bytes': np.mean(metrics['signature_sizes']),
+        'memory_mean_mb': np.mean(metrics['memory_usage'])
+    }
+    
+    print(f"\n{Fore.GREEN}Results for {name}:{Style.RESET_ALL}")
+    print(f"Key Generation Time: {stats['keygen_mean_ms']:.2f} ± {stats['keygen_std_ms']:.2f} ms")
+    print(f"Signing Time: {stats['sign_mean_ms']:.2f} ± {stats['sign_std_ms']:.2f} ms")
+    print(f"Signature Size: {stats['signature_size_mean_bytes']:.0f} bytes")
+    print(f"Memory Usage: {stats['memory_mean_mb']:.2f} MB")
+    
+    return metrics, stats
 
-## signature size
-rsa_sig = signer.sign(test_message)
-print(f"RSA Signature Size: {len(rsa_sig)} bytes | Message Size: {len(test_message)} bytes")
+def create_plots(all_metrics: List[Dict], all_stats: List[Dict]):
+    print(f"\n{Fore.CYAN}Generating plots...{Style.RESET_ALL}")
+    
+    # Create a DataFrame for boxplots
+    df_times = pd.DataFrame()
+    for metrics in all_metrics:
+        name = metrics['algorithm']
+        df_times = pd.concat([
+            df_times,
+            pd.DataFrame({
+                'Algorithm': name,
+                'Time (ms)': metrics['keygen_times'],
+                'Operation': 'Key Generation'
+            }),
+            pd.DataFrame({
+                'Algorithm': name,
+                'Time (ms)': metrics['sign_times'],
+                'Operation': 'Signing'
+            })
+        ])
+    
+    # Set up the plotting style
+    sns.set_style("whitegrid")
+    plt.figure(figsize=(15, 10))
+    
+    # Create subplots
+    plt.subplot(2, 1, 1)
+    sns.boxplot(data=df_times, x='Algorithm', y='Time (ms)', hue='Operation')
+    plt.title('Performance Comparison of Signature Algorithms')
+    plt.xticks(rotation=45)
+    
+    # Create bar plot for signature sizes
+    plt.subplot(2, 1, 2)
+    sizes_df = pd.DataFrame([{
+        'Algorithm': m['algorithm'],
+        'Size (bytes)': s['signature_size_mean_bytes']
+    } for m, s in zip(all_metrics, all_stats)])
+    sns.barplot(data=sizes_df, x='Algorithm', y='Size (bytes)')
+    plt.title('Signature Sizes')
+    plt.xticks(rotation=45)
+    
+    plt.tight_layout()
+    plt.savefig(os.path.join(IMAGES_DIR, 'benchmark_results.png'))
+    print(f"{Fore.GREEN}Plots saved as benchmark_results.png{Style.RESET_ALL}")
+    
+    # Save detailed results to CSV
+    results_df = pd.DataFrame(all_stats)
+    results_df.to_csv(os.path.join(CSV_DIR, 'benchmark_results.csv'), index=False)
+    print(f"{Fore.GREEN}Detailed results saved to benchmark_results.csv{Style.RESET_ALL}")
 
-## generate dkim record
-dkim_sig_time = timeit.timeit(lambda: signer.generate_dkim_signature(test_headers, test_body), number=100) / 100
-print(f"Average DKIM signature generation time: {dkim_sig_time * 1000:.2f} ms")
+def main():
+    algorithms = {
+        'RSA-2048': (rsa_sha256.RSA2048Signer, None),
+        'ECDSA-P256': (ecdsa_sha256.ECDSASigner, None),
+        'Ed25519': (ed25519_sha256.ED25519Signer, None),
+        'Dilithium2': (dilithium.DilithiumSigner, '44'),
+        'Dilithium3': (dilithium.DilithiumSigner, '65'),
+        'Dilithium5': (dilithium.DilithiumSigner, '87')
+    }
 
-## dns record size
-rsa_record = signer.dkim_record()[1]
-print(f"RSA DKIM Record Size: {len(rsa_record)} bytes")
+    all_metrics = []
+    all_stats = []
+    
+    for name, (signer_class, security_level) in algorithms.items():
+        metrics, stats = collect_metrics(name, signer_class, security_level)
+        all_metrics.append(metrics)
+        all_stats.append(stats)
+    
+    create_plots(all_metrics, all_stats)
 
-## verification
-signature = signer.generate_dkim_signature(test_headers, test_body)
-verifier = rsa_sha256.RSA2048Verifier(signer.dkim_record()[1]) 
-verify_time = timeit.timeit(
-    lambda: verifier.verify_dkim_signature(signature, "\r\n".join(f"{k}: {v}" for k, v in test_headers.items()), test_body),
-    number=100
-) / 100
-print(f"Average DKIM verification time: {verify_time * 1000:.2f} ms")
-
-import time
-
-# RSA Throughput
-start = time.time()
-for _ in range(1000):
-    signer.sign(test_message)
-rsa_throughput = 1000 / (time.time() - start)
-print(f"RSA Throughput: {rsa_throughput:.2f} sig/s")
-
-from memory_profiler import memory_usage
-mem_usage = memory_usage((signer.generate_keys, (), {}))
-print(f"Peak memory during keygen: {max(mem_usage)} MiB")
-
-import psutil
-import os
-
-# Measure CPU/RAM during RSA signing
-process = psutil.Process(os.getpid())
-cpu_before = process.cpu_percent()
-mem_before = process.memory_info().rss
-signer.sign(test_message)
-cpu_after = process.cpu_percent()
-mem_after = process.memory_info().rss
-print(f"RSA CPU: {cpu_after - cpu_before:.2f}% | RAM: {(mem_after - mem_before) / 1024:.2f} KB")
+if __name__ == '__main__':
+    freeze_support()
+    main()
